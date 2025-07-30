@@ -42,7 +42,7 @@ from PyStoreJSONLib.PyStoreManager import PyStoreManager
 manager = PyStoreManager("path/to/databases")
 ```
 This will create a directory if it does not exist.\
-Each manager is a collection of datatables, each stored in its own JSON file
+Each manager is a collection of JSON files that represent datatables.
 
 ### Create and Get Database
 ```python

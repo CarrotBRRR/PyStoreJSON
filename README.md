@@ -54,7 +54,14 @@ db = manager.get_database("people")
 ```python
 db.insert({"name": "Alice", "age": 30})
 db.insert({"name": "Charlie", "age": 30})
-db.insert({"name": "Bob", "age": 25})
+db.insert({"name": "Eve", "age": 29, "city": "New York"})
+db.insert(
+    [
+        {"name": "Bob", "age": 25, "city": "Los Angeles"},
+        {"name": "Ivy", "age": 29, "city": None},
+        {"name": "Hannah", "age": 30}
+    ]
+)
 ```
 
 ### Query Rows

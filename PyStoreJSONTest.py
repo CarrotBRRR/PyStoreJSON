@@ -74,17 +74,57 @@ class TestPyStoreManagerAndDB(unittest.TestCase):
         self.assertEqual(len(remaining), 1)
         self.assertEqual(remaining[0]["id"], 2)
 
+    def test_sort_database(self):
+        db = self.manager.create_database("sort_test")
+        db.insert({"name": "Charlie", "age": 28})
+        db.insert({"name": "Alice", "age": 22})
+        db.insert({"name": "Bob", "age": 25})
+
+        # Sort by 'name' ascending
+        sorted_by_name = self.manager.sort_database("sort_test", "name")
+        self.assertEqual([row["name"] for row in sorted_by_name], ["Alice", "Bob", "Charlie"])
+
+        # Sort by 'age' descending
+        sorted_by_age_desc = self.manager.sort_database("sort_test", "age", reverse=True)
+        self.assertEqual([row["age"] for row in sorted_by_age_desc], [28, 25, 22])
+
+
 def manual_test_database(manager: PyStoreManager):
     db = manager.delete_database("print_test")
+    print(f"Test Database 'print_test' deleted: {db}")
+
     db = manager.create_database("print_test")
+    print(f"Test Database 'print_test' created: {db}")
+
+    print("Test Database Insertions:")
     db.insert({"name": "Charlie", "age": 40})
     db.insert({"name": "Diana", "age": 35})
-
     db.insert({"name": "Eve", "age": 28, "city": "New York"})
     db.insert({"name": "Frank", "age": 22, "city": "Los Angeles"})
     db.insert({"name": "George", "age": 45, "city": "New York"})
+    print(f"Total entries in 'print_test': {len(db.get_all())}, expected: 5")
 
-    print(manager.get_database("print_test").find_by("city", "New York"))
+    print(f"Test Database Query:")
+    print(f"\tfind by city None: {len(manager.get_database('print_test').find_by('city', None))}, expected: 2")
+    print(f"\tfind by city 'New York': {len(manager.get_database('print_test').find_by('city', 'New York'))}, expected: 2")
+    print(f"\tfind by city 'Los Angeles': {len(manager.get_database('print_test').find_by('city', 'Los Angeles'))}, expected: 1")
+
+    # sort test
+    print("Test Database Printing:")
+    manager.print_database("print_test")
+
+    print("Test Database Sorting")
+    print("\tsorting by age descending:")
+    manager.sort_database("print_test", "age", reverse=True)
+    manager.print_database("print_test")
+
+    print("\tsorting by name ascending:")
+    manager.sort_database("print_test", "name")
+    manager.print_database("print_test")
+
+    print("\tsorting by age ascending:")
+    manager.sort_database("print_test", "age")
+    manager.print_database("print_test")
 
 if __name__ == "__main__":
     print("--------- Manual Test Begin ---------\n")
@@ -92,4 +132,3 @@ if __name__ == "__main__":
     print("\n--------- Manual Test End -----------\n")
 
     unittest.main()
-

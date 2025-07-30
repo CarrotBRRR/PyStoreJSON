@@ -86,6 +86,30 @@ class PyStoreManager:
 
         return sorted_data
 
+    def sort_columns(self, name: str, key_row_index: int, reverse: bool = False) -> List[Dict]:
+        """
+        Sort the rows in the specified database by the given key.
+        Returns a sorted list of rows.
+        """
+        db = self.get_database(name)
+        sorted_data = db._sort_columns(key_row_index, reverse)
+
+        db._save(sorted_data)
+
+        return sorted_data
+
+    def sort_columns_by_list(self, name: str, column_order: List[str]) -> List[Dict]:
+        """
+        Sort the rows in the specified database by the given column order.
+        Returns a sorted list of rows.
+        """
+        db = self.get_database(name)
+        sorted_data = db._sort_columns_by_order(column_order)
+
+        db._save(sorted_data)
+
+        return sorted_data
+
     def print_database(self, name: str) -> None:
         """
         Print the contents of the specified database.

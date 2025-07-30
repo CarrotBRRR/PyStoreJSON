@@ -15,7 +15,7 @@ Dominic Choi
 
 import json
 import os
-from typing import List, Dict, Optional
+from typing import List, Dict, Union
 
 
 class PyStoreJSONDB:
@@ -132,15 +132,92 @@ class PyStoreJSONDB:
 
     def _sort(self, key: str, reverse: bool = False) -> List[Dict]:
         """
-        Sort the database rows by the specified key.
+        Sort the database rows by the specified key, handling None values.
 
         :param key: The key (column) to sort by.
         :param reverse: Whether to sort in descending order.
         :return: Sorted list of rows.
         """
         data = self._load()
+
+        def safe_sort_key(row):
+            val = row.get(key, None)
+            # Use a tuple: (is_none, actual_value)
+            return (val is None, val)
+
         try:
-            sorted_data = sorted(data, key=lambda row: row.get(key, None), reverse=reverse)
+            sorted_data = sorted(data, key=safe_sort_key, reverse=reverse)
         except TypeError:
             raise ValueError(f"Cannot sort by key '{key}' due to incomparable types.")
+
         return sorted_data
+
+    def _sort_columns(self, row_index: int, reverse: bool = False) -> List[Dict]:
+        """
+        Sort the columns of all rows based on the values in the specified row index.
+
+        :param row_index: Index of the row to use as a reference for column sort order.
+        :param reverse: Whether to sort columns in descending order.
+        :return: List of rows with reordered keys.
+        """
+        data = self._load()
+
+        if not (0 <= row_index < len(data)):
+            raise IndexError("Row index out of range.")
+
+        reference_row = data[row_index]
+
+        # Sort keys by value, with None last, and coercion to string for safe comparison
+        def sort_key(k):
+            val = reference_row.get(k)
+            return (val is None, str(val))
+
+        sorted_keys = sorted(reference_row.keys(), key=sort_key, reverse=reverse)
+
+        # Reconstruct each row with keys in sorted order
+        sorted_rows = []
+        for row in data:
+            sorted_row = {key: row.get(key, None) for key in sorted_keys}
+            sorted_rows.append(sorted_row)
+
+        return sorted_rows
+
+    def _sort_columns_by_order(self, column_order: Union[List[str], Dict[str, int]]) -> List[Dict]:
+        """
+        Reorders columns in all rows according to the provided column order.
+        Columns not listed will appear at the end in original order.
+
+        :param column_order: Desired column order as a list or dict with priorities.
+        :return: List of rows with keys reordered.
+        """
+        from collections import defaultdict
+
+        data = self._load()
+
+        # Convert list to index-priority dict
+        if isinstance(column_order, list):
+            priority_map = {key: idx for idx, key in enumerate(column_order)}
+        elif isinstance(column_order, dict):
+            priority_map = column_order
+        else:
+            raise TypeError("column_order must be a list or dict")
+
+        def sort_key(k, original_index):
+            return (
+                0 if k in priority_map else 1,                    # Priority bucket: known vs unknown
+                priority_map.get(k, float('inf')),                # Sort known keys by specified priority
+                original_index                                     # Preserve original order for unknowns
+            )
+
+        # Reconstruct each row with sorted keys
+        sorted_rows = []
+        for row in data:
+            keys_with_index = list(enumerate(row.keys()))
+            sorted_keys = [k for _, k in sorted(
+                keys_with_index,
+                key=lambda pair: sort_key(pair[1], pair[0])
+            )]
+            sorted_row = {k: row.get(k, None) for k in sorted_keys}
+            sorted_rows.append(sorted_row)
+
+        return sorted_rows

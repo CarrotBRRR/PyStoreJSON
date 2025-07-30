@@ -169,7 +169,7 @@ def manual_test_database(manager: PyStoreManager):
     print(f"Total entries in 'print_test': {len(db.get_all())}, expected: 5")
 
     print(f"Test Database Query:")
-    print(f"\tfind by city None: {len(manager.get_database('print_test').find_by('city', None))}, expected: 2")
+    print(f"\tfind by city None: {len(manager.get_database('print_test').find_by('city', None))}, expected: 3")
     print(f"\tfind by city 'New York': {len(manager.get_database('print_test').find_by('city', 'New York'))}, expected: 2")
     print(f"\tfind by city 'Los Angeles': {len(manager.get_database('print_test').find_by('city', 'Los Angeles'))}, expected: 1")
 

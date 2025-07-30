@@ -1,6 +1,7 @@
 import unittest
 import tempfile
 import os
+
 from PyStoreJSONLib.PyStoreManager import PyStoreManager
 from PyStoreJSONLib.PyStoreJSON import PyStoreJSONDB
 
@@ -151,6 +152,41 @@ class TestPyStoreManagerAndDB(unittest.TestCase):
         result = db.rename_key("nonexistent", "something")
         self.assertFalse(result)
 
+    def test_batch_update_by(self):
+        db = self.manager.create_database("batch_update_test")
+        db.insert([{"id": 1, "name": "Alice", "score": 70},
+                   {"id": 2, "name": "Bob", "score": 65},
+                   {"id": 3, "name": "Charlie", "score": 80}])
+        
+        updates = [
+            ("id", 1, {"score": 90, "passed": True}),
+            ("name", "Bob", {"score": 75}),
+            ("id", 3, {"passed": True})
+        ]
+
+        db.insert({"id": 4, "name": "David", "score": 20, "passed": False})
+
+        updated_count = db.batch_update_by(updates)
+        self.assertEqual(updated_count, 3)
+
+        all_rows = db.get_all()
+        for row in all_rows:
+            self.assertIn("passed", row)
+            if row["id"] == 1:
+                self.assertEqual(row["score"], 90)
+                self.assertTrue(row["passed"])
+
+            elif row["name"] == "Bob":
+                self.assertEqual(row["score"], 75)
+                self.assertEqual(row["passed"], None)
+
+            elif row["id"] == 3:
+                self.assertEqual(row["score"], 80)
+                self.assertTrue(row["passed"])
+
+            elif row["id"] == 4:
+                self.assertEqual(row["score"], 20)
+                self.assertFalse(row["passed"])
 
 def manual_test_database(manager: PyStoreManager):
     db = manager.delete_database("print_test")
@@ -190,31 +226,31 @@ def manual_test_database(manager: PyStoreManager):
     manager.print_database("print_test")
 
     print("Test Database Sorting")
-    print("\tsorting columns to match row 0:")
+    print("sorting columns to match row 0:")
     manager.sort_columns("print_test", 0)
     manager.print_database("print_test")
 
-    print("\tsorting columns to match provided list:")
+    print("sorting columns to match provided list:")
     manager.sort_columns_by_list("print_test", ["age", "name", "not_a_column", "city"])
     manager.print_database("print_test")
 
-    print("\treverting to original order:")
+    print("reverting to original order:")
     manager.sort_columns_by_list("print_test", ["name", "age", "city"])
     manager.print_database("print_test")
 
-    print("\tsorting by age descending:")
+    print("sorting by age descending:")
     manager.sort_database("print_test", "age", reverse=True)
     manager.print_database("print_test")
 
-    print("\tsorting by name ascending:")
+    print("sorting by name ascending:")
     manager.sort_database("print_test", "name")
     manager.print_database("print_test")
 
-    print("\tsorting by age ascending:")
+    print("sorting by age ascending:")
     manager.sort_database("print_test", "age")
     manager.print_database("print_test")
 
-    print("\tsorting by city ascending:")
+    print("sorting by city ascending:")
     manager.sort_database("print_test", "city")
     manager.print_database("print_test")
 

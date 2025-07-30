@@ -39,13 +39,33 @@ class PyStoreJSONDB:
         with open(self.filepath, 'w') as f:
             json.dump(data, f, indent=4)
 
-    def insert(self, row: Dict) -> None:
+    def insert(self, row: Dict):
         """
-        Insert a new row into the database.
+        Insert a new row into the database, adding missing columns to existing rows
+        and missing values to the new row to ensure column consistency.
 
-        :param row: Dictionary representing a row (must contain keys as columns).
+        :param row: Dictionary representing a row.
         """
         data = self._load()
+
+        # Collect all keys from existing data
+        all_keys = set()
+        for entry in data:
+            all_keys.update(entry.keys())
+
+        new_keys = set(row.keys()) - all_keys
+        missing_keys = all_keys - set(row.keys())
+
+        # Add new keys to existing rows
+        if new_keys:
+            for entry in data:
+                for key in new_keys:
+                    entry[key] = None
+
+        # Add missing keys to the new row
+        for key in missing_keys:
+            row[key] = None
+
         data.append(row)
         self._save(data)
 
@@ -66,6 +86,7 @@ class PyStoreJSONDB:
     def update_by(self, key: str, value, updates: Dict) -> int:
         """
         Update rows that match the given key-value condition.
+        Adds any new keys in `updates` to all rows with a default value of None.
 
         :param key: Column name to match.
         :param value: Value to match.
@@ -74,12 +95,24 @@ class PyStoreJSONDB:
         """
         data = self._load()
         count = 0
+
+        # Determine if any update keys are new
+        existing_keys = set().union(*(row.keys() for row in data))
+        new_keys = set(updates.keys()) - existing_keys
+
+        # Add new keys to all rows
+        if new_keys:
+            for row in data:
+                for new_key in new_keys:
+                    row[new_key] = None
+
+        # Apply updates to matching rows
         for row in data:
             if row.get(key) == value:
                 row.update(updates)
                 count += 1
+
         self._save(data)
-        
         return count
 
     def delete_by(self, key: str, value) -> int:
@@ -96,3 +129,18 @@ class PyStoreJSONDB:
         self._save(new_data)
 
         return count
+
+    def _sort(self, key: str, reverse: bool = False) -> List[Dict]:
+        """
+        Sort the database rows by the specified key.
+
+        :param key: The key (column) to sort by.
+        :param reverse: Whether to sort in descending order.
+        :return: Sorted list of rows.
+        """
+        data = self._load()
+        try:
+            sorted_data = sorted(data, key=lambda row: row.get(key, None), reverse=reverse)
+        except TypeError:
+            raise ValueError(f"Cannot sort by key '{key}' due to incomparable types.")
+        return sorted_data

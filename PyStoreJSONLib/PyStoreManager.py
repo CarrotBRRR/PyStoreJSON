@@ -74,6 +74,18 @@ class PyStoreManager:
             return True
         return False
 
+    def sort_database(self, name: str, key: str, reverse: bool = False) -> List[Dict]:
+        """
+        Sort the rows in the specified database by the given key.
+        Returns a sorted list of rows.
+        """
+        db = self.get_database(name)
+        sorted_data = db._sort(key, reverse)
+
+        db._save(sorted_data)
+
+        return sorted_data
+
     def print_database(self, name: str) -> None:
         """
         Print the contents of the specified database.
@@ -93,5 +105,5 @@ class PyStoreManager:
             print(f"--- Contents of '{name}' ---")
             for i, row in enumerate(data, start=1):
                 print(f"[Row {i}]")
-                pprint.pprint(row, indent=4)
+                pprint.pprint(row, indent=4, sort_dicts=False)
             print("--- End ---")

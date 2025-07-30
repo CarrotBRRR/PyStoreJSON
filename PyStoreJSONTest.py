@@ -102,6 +102,7 @@ def manual_test_database(manager: PyStoreManager):
     db.insert({"name": "Eve", "age": 28, "city": "New York"})
     db.insert({"name": "Frank", "age": 22, "city": "Los Angeles"})
     db.insert({"name": "George", "age": 45, "city": "New York"})
+    db.insert({"name": "Hannah", "city": None, "age": 30})
     print(f"Total entries in 'print_test': {len(db.get_all())}, expected: 5")
 
     print(f"Test Database Query:")
@@ -114,6 +115,18 @@ def manual_test_database(manager: PyStoreManager):
     manager.print_database("print_test")
 
     print("Test Database Sorting")
+    print("\tsorting columns to match row 0:")
+    manager.sort_columns("print_test", 0)
+    manager.print_database("print_test")
+
+    print("\tsorting columns to match provided list:")
+    manager.sort_columns_by_list("print_test", ["age", "name", "city"])
+    manager.print_database("print_test")
+
+    print("\treverting to original order:")
+    manager.sort_columns_by_list("print_test", ["name", "age", "city"])
+    manager.print_database("print_test")
+
     print("\tsorting by age descending:")
     manager.sort_database("print_test", "age", reverse=True)
     manager.print_database("print_test")
@@ -124,6 +137,10 @@ def manual_test_database(manager: PyStoreManager):
 
     print("\tsorting by age ascending:")
     manager.sort_database("print_test", "age")
+    manager.print_database("print_test")
+
+    print("\tsorting by city ascending:")
+    manager.sort_database("print_test", "city")
     manager.print_database("print_test")
 
 if __name__ == "__main__":

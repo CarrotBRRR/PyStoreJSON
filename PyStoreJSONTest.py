@@ -120,7 +120,7 @@ def manual_test_database(manager: PyStoreManager):
     manager.print_database("print_test")
 
     print("\tsorting columns to match provided list:")
-    manager.sort_columns_by_list("print_test", ["age", "name", "city"])
+    manager.sort_columns_by_list("print_test", ["age", "name", "not_a_column", "city"])
     manager.print_database("print_test")
 
     print("\treverting to original order:")

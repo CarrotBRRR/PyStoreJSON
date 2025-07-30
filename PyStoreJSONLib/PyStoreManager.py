@@ -124,7 +124,7 @@ class PyStoreManager:
 
     def print_database(self, name: str) -> None:
         """
-        Print the contents of the specified database.
+        Print the contents of the specified database as a table.
         If the database does not exist, print a warning.
         """
         db_path = self._get_path(name)
@@ -137,9 +137,34 @@ class PyStoreManager:
 
         if not data:
             print(f"[i] Database '{name}' is empty.")
-        else:
-            print(f"--- Contents of '{name}' ---")
-            for i, row in enumerate(data, start=1):
-                print(f"[Row {i}]")
-                pprint.pprint(row, indent=4, sort_dicts=False)
-            print("--- End ---")
+            return
+
+        # Preserve the key order from the first row
+        columns = list(data[0].keys())
+
+        # Include any additional keys from other rows in order of first appearance
+        for row in data[1:]:
+            for key in row:
+                if key not in columns:
+                    columns.append(key)
+
+        # Convert all rows to strings and fill in missing values
+        rows = []
+        for row in data:
+            rows.append([str(row.get(col, "")) for col in columns])
+
+        # Calculate column widths
+        col_widths = [max(len(col), max(len(r[i]) for r in rows)) for i, col in enumerate(columns)]
+
+        def format_row(row_vals):
+            return "| " + " | ".join(f"{val:<{w}}" for val, w in zip(row_vals, col_widths)) + " |"
+
+        # Print the table
+        print(f"--- Contents of '{name}' ---")
+        print("-" * (sum(col_widths) + 3 * len(col_widths) + 4))
+        print(format_row(columns))  # Header row
+        print("-" * (sum(col_widths) + 3 * len(col_widths) + 4))
+        for row in rows:
+            print(format_row(row))
+        print("-" * (sum(col_widths) + 3 * len(col_widths) + 4))
+        print("--- End ---")

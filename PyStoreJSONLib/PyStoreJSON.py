@@ -61,34 +61,42 @@ class PyStoreJSONDB:
             for key in empty_keys:
                 row.pop(key, None)
 
-    def insert(self, row: Dict):
-        """
-        Insert a new row into the database, adding missing columns to existing rows
-        and missing values to the new row to ensure column consistency.
+    from typing import Dict, List, Union
 
-        :param row: Dictionary representing a row.
+    def insert(self, row: Union[Dict, List[Dict]]):
+        """
+        Insert one or more new rows into the database, adding missing columns to existing rows
+        and missing values to the new rows to ensure column consistency.
+
+        :param row: A dictionary representing a single row, or a list of such dictionaries.
         """
         data = self._load()
+
+        # Normalize to list of dicts
+        rows = [row] if isinstance(row, dict) else row
 
         # Collect all keys from existing data
         all_keys = set()
         for entry in data:
             all_keys.update(entry.keys())
 
-        new_keys = set(row.keys()) - all_keys
-        missing_keys = all_keys - set(row.keys())
+        # Collect all keys from new data
+        for new_row in rows:
+            all_keys.update(new_row.keys())
 
-        # Add new keys to existing rows
-        if new_keys:
-            for entry in data:
-                for key in new_keys:
+        # Add any new keys to existing rows
+        for entry in data:
+            for key in all_keys:
+                if key not in entry:
                     entry[key] = None
 
-        # Add missing keys to the new row
-        for key in missing_keys:
-            row[key] = None
+        # Normalize and append new rows
+        for new_row in rows:
+            for key in all_keys:
+                if key not in new_row:
+                    new_row[key] = None
+            data.append(new_row)
 
-        data.append(row)
         self._save(data)
 
     def get_all(self) -> List[Dict]:

@@ -110,6 +110,18 @@ class PyStoreManager:
 
         return sorted_data
 
+    def rename_column(self, name: str, old_key: str, new_key: str) -> bool:
+        """
+        Rename a column in the specified database.
+
+        :param name: Database name.
+        :param old_key: Existing column name.
+        :param new_key: New column name.
+        :return: True if renamed, False if no such column existed.
+        """
+        db = self.get_database(name)
+        return db.rename_key(old_key, new_key)
+
     def print_database(self, name: str) -> None:
         """
         Print the contents of the specified database.

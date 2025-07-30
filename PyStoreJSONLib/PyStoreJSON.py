@@ -39,6 +39,28 @@ class PyStoreJSONDB:
         with open(self.filepath, 'w') as f:
             json.dump(data, f, indent=4)
 
+    def _prune_empty_columns(self, data: List[Dict]) -> None:
+        """
+        Remove columns that are None or missing in *every* row.
+        This modifies the `data` list in place.
+        """
+        if not data:
+            return
+
+        # Get all keys across all rows
+        all_keys = set().union(*(row.keys() for row in data))
+
+        # Identify keys where every row has either None or does not include the key
+        empty_keys = set()
+        for key in all_keys:
+            if all(row.get(key, None) is None for row in data):
+                empty_keys.add(key)
+
+        # Remove these keys from all rows
+        for row in data:
+            for key in empty_keys:
+                row.pop(key, None)
+
     def insert(self, row: Dict):
         """
         Insert a new row into the database, adding missing columns to existing rows
@@ -85,34 +107,33 @@ class PyStoreJSONDB:
 
     def update_by(self, key: str, value, updates: Dict) -> int:
         """
-        Update rows that match the given key-value condition.
-        Adds any new keys in `updates` to all rows with a default value of None.
+        Update rows that match the given key-value condition with new values.
 
         :param key: Column name to match.
         :param value: Value to match.
-        :param updates: Dictionary of fields to update.
+        :param updates: Dictionary of updates to apply.
         :return: Number of rows updated.
         """
         data = self._load()
         count = 0
 
-        # Determine if any update keys are new
         existing_keys = set().union(*(row.keys() for row in data))
         new_keys = set(updates.keys()) - existing_keys
 
-        # Add new keys to all rows
-        if new_keys:
-            for row in data:
-                for new_key in new_keys:
-                    row[new_key] = None
+        # Ensure schema consistency
+        for row in data:
+            for k in new_keys:
+                row[k] = None
 
-        # Apply updates to matching rows
+        # Apply the updates
         for row in data:
             if row.get(key) == value:
                 row.update(updates)
                 count += 1
 
+        self._prune_empty_columns(data)
         self._save(data)
+
         return count
 
     def delete_by(self, key: str, value) -> int:
@@ -126,9 +147,32 @@ class PyStoreJSONDB:
         data = self._load()
         new_data = [row for row in data if row.get(key) != value]
         count = len(data) - len(new_data)
+
+        self._prune_empty_columns(new_data)
         self._save(new_data)
 
         return count
+
+    def rename_key(self, old_key: str, new_key: str) -> bool:
+        """
+        Rename a key in all rows of the database.
+
+        :param old_key: Existing column name to rename.
+        :param new_key: New column name to assign.
+        :return: True if renamed, False if old_key did not exist in any row.
+        """
+        data = self._load()
+        renamed = False
+
+        for row in data:
+            if old_key in row:
+                row[new_key] = row.pop(old_key)
+                renamed = True
+
+        if renamed:
+            self._save(data)
+
+        return renamed
 
     def _sort(self, key: str, reverse: bool = False) -> List[Dict]:
         """

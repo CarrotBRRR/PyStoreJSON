@@ -15,14 +15,16 @@ Dominic Choi
 
 import json
 import os
-from typing import List, Dict, Union
-
+from typing import List, Dict, Union, Tuple
 
 class PyStoreJSONDB:
     def __init__(self, filepath: str):
         """
         Initialize the PyStoreJSONDB with the path to the JSON file.
         Creates the file if it does not exist.
+
+        :param filepath: Path to the JSON file.
+        :type filepath: str
         """
         self.filepath = filepath
         if not os.path.exists(self.filepath):
@@ -30,12 +32,21 @@ class PyStoreJSONDB:
                 json.dump([], f)
 
     def _load(self) -> List[Dict]:
-        """Load and return all rows from the JSON file."""
+        """
+        Load and return all rows from the JSON file.
+
+        :return: List of rows (dictionaries).
+        """
         with open(self.filepath, 'r') as f:
             return json.load(f)
 
     def _save(self, data: List[Dict]) -> None:
-        """Save all rows to the JSON file."""
+        """
+        Save all rows to the JSON file.
+        
+        :param data: List of rows (dictionaries) to save.
+        :type data: List[Dict]
+        """
         with open(self.filepath, 'w') as f:
             json.dump(data, f, indent=4)
 
@@ -43,6 +54,9 @@ class PyStoreJSONDB:
         """
         Remove columns that are None or missing in *every* row.
         This modifies the `data` list in place.
+
+        :param data: List of rows (dictionaries) to prune.
+        :type data: List[Dict]
         """
         if not data:
             return
@@ -60,8 +74,6 @@ class PyStoreJSONDB:
         for row in data:
             for key in empty_keys:
                 row.pop(key, None)
-
-    from typing import Dict, List, Union
 
     def insert(self, row: Union[Dict, List[Dict]]):
         """
@@ -100,7 +112,11 @@ class PyStoreJSONDB:
         self._save(data)
 
     def get_all(self) -> List[Dict]:
-        """Return all rows in the database."""
+        """
+        Return all rows in the database.
+        
+        :return: List of all rows (dictionaries).
+        """
         return self._load()
 
     def find_by(self, key: str, value) -> List[Dict]:
@@ -138,6 +154,51 @@ class PyStoreJSONDB:
             if row.get(key) == value:
                 row.update(updates)
                 count += 1
+
+        self._prune_empty_columns(data)
+        self._save(data)
+
+        return count
+
+    def batch_update_by(
+        self,
+        conditions: Union[
+            Tuple[str, object, Dict],
+            List[Tuple[str, object, Dict]]
+        ]
+    ) -> int:
+        """
+        Update rows that match the given key-value condition(s) with new values.
+
+        :param conditions: A single tuple or a list of tuples where each tuple contains:
+                            (key, value, updates_dict)
+        :return: Number of rows updated.
+        """
+        data = self._load()
+        count = 0
+
+        # Normalize to a list of tuples
+        if isinstance(conditions, tuple):
+            conditions = [conditions]
+
+        # Collect all new keys from the updates
+        existing_keys = set().union(*(row.keys() for row in data))
+        new_keys = set()
+        for _, _, updates in conditions:
+            new_keys.update(updates.keys())
+        new_keys -= existing_keys
+
+        # Ensure schema consistency
+        for row in data:
+            for k in new_keys:
+                row[k] = None
+
+        # Apply the updates
+        for key, value, updates in conditions:
+            for row in data:
+                if row.get(key) == value:
+                    row.update(updates)
+                    count += 1
 
         self._prune_empty_columns(data)
         self._save(data)
@@ -182,7 +243,7 @@ class PyStoreJSONDB:
 
         return renamed
 
-    def _sort(self, key: str, reverse: bool = False) -> List[Dict]:
+    def sort(self, key: str, reverse: bool = False) -> List[Dict]:
         """
         Sort the database rows by the specified key, handling None values.
 
@@ -204,7 +265,7 @@ class PyStoreJSONDB:
 
         return sorted_data
 
-    def _sort_columns(self, row_index: int, reverse: bool = False) -> List[Dict]:
+    def sort_columns(self, row_index: int, reverse: bool = False) -> List[Dict]:
         """
         Sort the columns of all rows based on the values in the specified row index.
 
@@ -234,7 +295,7 @@ class PyStoreJSONDB:
 
         return sorted_rows
 
-    def _sort_columns_by_order(self, column_order: Union[List[str], Dict[str, int]]) -> List[Dict]:
+    def sort_columns_by_order(self, column_order: Union[List[str], Dict[str, int]]) -> List[Dict]:
         """
         Reorders columns in all rows according to the provided column order.
         Columns not listed will appear at the end in original order.
@@ -242,7 +303,6 @@ class PyStoreJSONDB:
         :param column_order: Desired column order as a list or dict with priorities.
         :return: List of rows with keys reordered.
         """
-        from collections import defaultdict
 
         data = self._load()
 

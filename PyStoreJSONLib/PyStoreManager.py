@@ -19,7 +19,11 @@ from PyStoreJSONLib.PyStoreJSON import PyStoreJSONDB
 class PyStoreManager:
     def __init__(self, directory: str):
         """
-        Manages multiple JSON databases within a directory.
+        Initialize the PyStoreManager with a directory to store datatables.
+        If the directory does not exist, it will be created.
+        
+        :param directory: Directory where database files will be stored.
+        :type directory: str
         """
         self.directory = directory
         os.makedirs(self.directory, exist_ok=True)
@@ -32,6 +36,9 @@ class PyStoreManager:
         """
         Return a PyStoreJSONDB instance for the given database name.
         Creates the database if it does not exist.
+
+        :param name: Database name (without `.json` extension).
+        :return: PyStoreJSONDB instance for the database.
         """
         if name not in self.databases:
             db_path = self._get_path(name)
@@ -42,6 +49,9 @@ class PyStoreManager:
         """
         Create a new database file with the given name if it doesn't exist.
         Returns a PyStoreJSONDB instance.
+
+        :param name: Database name (without `.json` extension).
+        :return: PyStoreJSONDB instance for the new database.
         """
         db_path = self._get_path(name)
         if not os.path.exists(db_path):
@@ -65,6 +75,9 @@ class PyStoreManager:
         """
         Delete the specified database file from disk.
         Returns True if deleted, False if it did not exist.
+
+        :param name: Database name.
+        :return: True if the database was deleted, False if it did not exist.
         """
         db_path = self._get_path(name)
         if os.path.exists(db_path):
@@ -78,9 +91,14 @@ class PyStoreManager:
         """
         Sort the rows in the specified database by the given key.
         Returns a sorted list of rows.
+
+        :param name: Database name.
+        :param key: Key to sort by.
+        :param reverse: If True, sort in descending order.
+        :return: Sorted list of rows.
         """
         db = self.get_database(name)
-        sorted_data = db._sort(key, reverse)
+        sorted_data = db.sort(key, reverse)
 
         db._save(sorted_data)
 
@@ -90,9 +108,12 @@ class PyStoreManager:
         """
         Sort the rows in the specified database by the given key.
         Returns a sorted list of rows.
+
+        :param name: Database name.
+        :param key_row_index: Index of the reference row to sort by.
         """
         db = self.get_database(name)
-        sorted_data = db._sort_columns(key_row_index, reverse)
+        sorted_data = db.sort_columns(key_row_index, reverse)
 
         db._save(sorted_data)
 
@@ -100,11 +121,15 @@ class PyStoreManager:
 
     def sort_columns_by_list(self, name: str, column_order: List[str]) -> List[Dict]:
         """
-        Sort the rows in the specified database by the given column order.
+        Sort the rows in the specified database by the given column order in a list.
         Returns a sorted list of rows.
+
+        :param name: Database name.
+        :param column_order: List of column names in desired order.
+        :return: Sorted list of rows with columns reordered.
         """
         db = self.get_database(name)
-        sorted_data = db._sort_columns_by_order(column_order)
+        sorted_data = db.sort_columns_by_order(column_order)
 
         db._save(sorted_data)
 
@@ -126,6 +151,8 @@ class PyStoreManager:
         """
         Print the contents of the specified database as a table.
         If the database does not exist, print a warning.
+
+        :param name: Database name.
         """
         db_path = self._get_path(name)
         if not os.path.exists(db_path):

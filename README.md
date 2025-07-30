@@ -18,6 +18,21 @@ Ideal for small applications, embedded systems, scripts, or local tools where si
 - Print database contents in a human-readable format.
 - No external dependencies (uses only Python standard library)
 
+## Advantages of PyStoreJSONDB
+1. Lightweight and Dependency-Free
+2. Human-Readable and Editable
+3. File-Based and Portable
+4. No Schema Enforcement
+5. Easy Integration with Python
+6. Dynamic Columns allow for flexible data structure
+
+## Disclaimer
+**DO NOT USE THIS FOR PRODUCTION USE**\
+This is intended for small-scale projects and scripts.\
+
+Not designed for high-performance or production-grade applications.\
+Please use a more robust database solution, such as PostgreSQL or MongoDB for these applications.
+
 ## Usage
 ### Initialize Manager
 
@@ -97,11 +112,3 @@ The list can contain column names or indices, and any columns not in the list, a
 manager.print_database("people")
 ```
 This will print out the entire contents of the "people" database in a human-readable format.
-
-## Advantages of PyStoreJSONDB
-1. Lightweight and Dependency-Free
-2. Human-Readable and Editable
-3. File-Based and Portable
-4. No Schema Enforcement
-5. Easy Integration with Python
-6. Dynamic Columns allow for flexible data structure

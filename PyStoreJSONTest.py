@@ -88,6 +88,69 @@ class TestPyStoreManagerAndDB(unittest.TestCase):
         sorted_by_age_desc = self.manager.sort_database("sort_test", "age", reverse=True)
         self.assertEqual([row["age"] for row in sorted_by_age_desc], [28, 25, 22])
 
+    def test_update_by_prunes_empty_columns(self):
+        db = self.manager.create_database("update_prune_test")
+        db.insert({"id": 1, "value": 100, "obsolete": "x"})
+        db.insert({"id": 2, "value": 200, "obsolete": "x"})
+
+        # Set 'obsolete' to None for all rows
+        db.update_by("id", 1, {"obsolete": None})
+
+        # obsolete should still exist since not all values are None
+        all_rows = db.get_all()
+        self.assertIn("obsolete", all_rows[0])
+        self.assertIn("obsolete", all_rows[1])
+
+        db.update_by("id", 2, {"obsolete": None})
+        # 'obsolete' should be pruned since all values are now None
+        all_rows = db.get_all()
+        for row in all_rows:
+            self.assertNotIn("obsolete", row)
+            self.assertIn("value", row)
+            self.assertIn("id", row)
+
+    def test_delete_by_prunes_empty_columns(self):
+        db = self.manager.create_database("delete_prune_test")
+        db.insert({"id": 1, "name": "Alice", "remove_me": "yes"})
+        db.insert({"id": 2, "name": "Bob", "remove_me": "yes"})
+        db.insert({"id": 3, "name": "Charlie", "remove_me": "keep"})
+
+        # Delete two rows, the only ones that had "remove_me" = "yes"
+        db.delete_by("remove_me", "yes")
+
+        # Only one row remains, and it should still contain 'remove_me'
+        all_rows = db.get_all()
+        self.assertEqual(len(all_rows), 1)
+        self.assertIn("remove_me", all_rows[0])
+
+        # Now set the remaining 'remove_me' to None, then check pruning
+        db.update_by("id", 3, {"remove_me": None})
+        all_rows = db.get_all()
+        for row in all_rows:
+            self.assertNotIn("remove_me", row)
+
+    def test_rename_key(self):
+        db = self.manager.create_database("rename_test")
+        db.insert({"name": "Charlie", "age": 40})
+        db.insert({"name": "Alice", "age": 25})
+
+        # Rename 'name' to 'nickname'
+        renamed = db.rename_key("name", "nickname")
+        self.assertTrue(renamed)
+
+        all_rows = db.get_all()
+        for row in all_rows:
+            self.assertIn("nickname", row)
+            self.assertNotIn("name", row)
+
+        # Ensure values were preserved
+        self.assertEqual(all_rows[0]["nickname"], "Charlie")
+        self.assertEqual(all_rows[1]["nickname"], "Alice")
+
+        # Try renaming a key that doesn't exist
+        result = db.rename_key("nonexistent", "something")
+        self.assertFalse(result)
+
 
 def manual_test_database(manager: PyStoreManager):
     db = manager.delete_database("print_test")

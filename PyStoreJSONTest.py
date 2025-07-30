@@ -173,6 +173,9 @@ def manual_test_database(manager: PyStoreManager):
     print(f"\tfind by city 'New York': {len(manager.get_database('print_test').find_by('city', 'New York'))}, expected: 2")
     print(f"\tfind by city 'Los Angeles': {len(manager.get_database('print_test').find_by('city', 'Los Angeles'))}, expected: 1")
 
+    # test dynamic column insertion
+    db.insert({"test": "test", "test2": 1234, "test3": "3"})
+
     # sort test
     print("Test Database Printing:")
     manager.print_database("print_test")
@@ -181,6 +184,9 @@ def manual_test_database(manager: PyStoreManager):
     print("\tsorting columns to match row 0:")
     manager.sort_columns("print_test", 0)
     manager.print_database("print_test")
+
+    # test dynamic column deletion
+    db.delete_by("test", "test")
 
     print("\tsorting columns to match provided list:")
     manager.sort_columns_by_list("print_test", ["age", "name", "not_a_column", "city"])

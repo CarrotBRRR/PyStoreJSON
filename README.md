@@ -28,7 +28,7 @@ Ideal for small applications, embedded systems, scripts, or local tools where si
 
 ## Disclaimer
 **DO NOT USE THIS FOR PRODUCTION USE**\
-This is intended for small-scale projects and scripts.\
+This is intended for small-scale projects and scripts.
 
 Not designed for high-performance or production-grade applications.\
 Please use a more robust database solution, such as PostgreSQL or MongoDB for these applications.

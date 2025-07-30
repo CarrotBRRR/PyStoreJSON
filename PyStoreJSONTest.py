@@ -166,27 +166,33 @@ def manual_test_database(manager: PyStoreManager):
     db.insert({"name": "Frank", "age": 22, "city": "Los Angeles"})
     db.insert({"name": "George", "age": 45, "city": "New York"})
     db.insert({"name": "Hannah", "city": None, "age": 30})
-    print(f"Total entries in 'print_test': {len(db.get_all())}, expected: 5")
+    print(f"Total entries in 'print_test': {len(db.get_all())}, expected: 6")
+
+    print("Test Database Batch Insertions:")
+    db.insert([{"name": "Alice", "age": 30, "city": "New York"},
+               {"name": "Bob", "age": 25, "city": "Los Angeles"},
+               {"name": "Ivy", "age": 29, "city": None}])
+    print(f"Total entries in 'print_test': {len(db.get_all())}, expected: 9")
 
     print(f"Test Database Query:")
-    print(f"\tfind by city None: {len(manager.get_database('print_test').find_by('city', None))}, expected: 3")
-    print(f"\tfind by city 'New York': {len(manager.get_database('print_test').find_by('city', 'New York'))}, expected: 2")
-    print(f"\tfind by city 'Los Angeles': {len(manager.get_database('print_test').find_by('city', 'Los Angeles'))}, expected: 1")
+    print(f"\tfind by city None: {len(manager.get_database('print_test').find_by('city', None))}, expected: 4")
+    print(f"\tfind by city 'New York': {len(manager.get_database('print_test').find_by('city', 'New York'))}, expected: 3")
+    print(f"\tfind by city 'Los Angeles': {len(manager.get_database('print_test').find_by('city', 'Los Angeles'))}, expected: 2")
 
-    # test dynamic column insertion
-    db.insert({"test": "test", "test2": 1234, "test3": "3"})
-
-    # sort test
-    print("Test Database Printing:")
+    print("Test Database Dynamic Column Insertion:")
+    db.insert({"test": "test", "test2": 1234})
+    manager.print_database("print_test")
+    print("Test Database Dynamic Update:")
+    db.update_by("test", "test", {"test2": None})
+    manager.print_database("print_test")
+    print("Test Database Dynamic Column Deletion:")
+    db.delete_by("test", "test")
     manager.print_database("print_test")
 
     print("Test Database Sorting")
     print("\tsorting columns to match row 0:")
     manager.sort_columns("print_test", 0)
     manager.print_database("print_test")
-
-    # test dynamic column deletion
-    db.delete_by("test", "test")
 
     print("\tsorting columns to match provided list:")
     manager.sort_columns_by_list("print_test", ["age", "name", "not_a_column", "city"])

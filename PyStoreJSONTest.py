@@ -188,12 +188,47 @@ class TestPyStoreManagerAndDB(unittest.TestCase):
                 self.assertEqual(row["score"], 20)
                 self.assertFalse(row["passed"])
 
-def manual_test_database(manager: PyStoreManager):
-    db = manager.delete_database("print_test")
-    print(f"Test Database 'print_test' deleted: {db}")
+    def test_sort_columns(self):
+        db = self.manager.create_database("sort_columns_test")
+        db.insert({"b": 1, "c": 2, "a": 3})
+        db.insert({"a": 6, "b": 4, "c": 5})
+        db.insert({"a": 9, "b": 7, "c": 8})
 
+        # Sort columns based on the values in row 0, ascending
+        sorted_rows = db.sort_columns(0)
+        self.assertEqual(list(sorted_rows[0].keys()), ["b", "c", "a"])
+        self.assertEqual([row["b"] for row in sorted_rows], [1, 4, 7])
+        self.assertEqual([row["c"] for row in sorted_rows], [2, 5, 8])
+        self.assertEqual([row["a"] for row in sorted_rows], [3, 6, 9])
+
+        # Sort columns based on row 0, descending
+        sorted_rows_desc = db.sort_columns(0, reverse=True)
+        self.assertEqual(list(sorted_rows_desc[0].keys()), ["a", "c", "b"])
+        self.assertEqual([row["a"] for row in sorted_rows_desc], [3, 6, 9])
+        self.assertEqual([row["c"] for row in sorted_rows_desc], [2, 5, 8])
+        self.assertEqual([row["b"] for row in sorted_rows_desc], [1, 4, 7])
+
+        # Insert row with a missing key to test defaulting to None
+        db.insert({"a": 0, "c": 0})
+        sorted_rows_missing = db.sort_columns(0)
+        # Should still sort using row 0 as reference: b, c, a
+        self.assertEqual(list(sorted_rows_missing[-1].keys()), ["b", "c", "a"])
+        self.assertIsNone(sorted_rows_missing[-1]["b"])
+        self.assertEqual(sorted_rows_missing[-1]["c"], 0)
+        self.assertEqual(sorted_rows_missing[-1]["a"], 0)
+
+        # Test index out of range
+        with self.assertRaises(IndexError):
+            db.sort_columns(100)
+
+
+def manual_test_database(manager: PyStoreManager):
+    db_len = len(manager.list_databases())
+    db_deleted = manager.delete_database("print_test")
+    print(f"Test Database 'print_test' deleted: {db_deleted}\n\tDatabases count expected? {len(manager.list_databases()) < db_len}")
     db = manager.create_database("print_test")
-    print(f"Test Database 'print_test' created: {db}")
+    print(f"Test Database 'print_test' created: {len(manager.list_databases()) == db_len}")
+    print()
 
     print("Test Database Insertions:")
     db.insert({"name": "Charlie", "age": 40})
@@ -202,40 +237,45 @@ def manual_test_database(manager: PyStoreManager):
     db.insert({"name": "Frank", "age": 22, "city": "Los Angeles"})
     db.insert({"name": "George", "age": 45, "city": "New York"})
     db.insert({"name": "Hannah", "city": None, "age": 30})
-    print(f"Total entries in 'print_test': {len(db.get_all())}, expected: 6")
-
-    print("Test Database Batch Insertions:")
+    print(f"\tTotal entries in 'print_test': {len(db.get_all())}\n\t\tGot expected? {len(db.get_all()) == 6}")
     db.insert([{"name": "Alice", "age": 30, "city": "New York"},
                {"name": "Bob", "age": 25, "city": "Los Angeles"},
                {"name": "Ivy", "age": 29, "city": None}])
-    print(f"Total entries in 'print_test': {len(db.get_all())}, expected: 9")
+    print(f"\tTotal entries in 'print_test': {len(db.get_all())}\n\t\tGot expected? {len(db.get_all()) == 9}")
+    print()
 
     print(f"Test Database Query:")
-    print(f"\tfind by city None: {len(manager.get_database('print_test').find_by('city', None))}, expected: 4")
-    print(f"\tfind by city 'New York': {len(manager.get_database('print_test').find_by('city', 'New York'))}, expected: 3")
-    print(f"\tfind by city 'Los Angeles': {len(manager.get_database('print_test').find_by('city', 'Los Angeles'))}, expected: 2")
+    print(f"\tfind by city None: {len(manager.get_database('print_test').find_by('city', None))}\n\t\tGot expected? {len(manager.get_database('print_test').find_by('city', None)) == 4}")
+    print(f"\tfind by city 'New York': {len(manager.get_database('print_test').find_by('city', 'New York'))}\n\t\tGot expected? {len(manager.get_database('print_test').find_by('city', 'New York')) == 3}")
+    print(f"\tfind by city 'Los Angeles': {len(manager.get_database('print_test').find_by('city', 'Los Angeles'))}\n\t\tGot expected? {len(manager.get_database('print_test').find_by('city', 'Los Angeles')) == 2}")
+    print()
 
     print("Test Database Dynamic Column Insertion:")
     db.insert({"test": "test", "test2": 1234})
     manager.print_database("print_test")
+    print()
+
     print("Test Database Dynamic Update:")
     db.update_by("test", "test", {"test2": None})
     manager.print_database("print_test")
+    print()
+
     print("Test Database Dynamic Column Deletion:")
     db.delete_by("test", "test")
     manager.print_database("print_test")
+    print()
 
     print("Test Database Sorting")
-    print("sorting columns to match row 0:")
-    manager.sort_columns("print_test", 0)
+    print(f"sorting columns to match row 5: {db.at_index(5)}")
+    manager.sort_columns("print_test", 5)
     manager.print_database("print_test")
 
-    print("sorting columns to match provided list:")
-    manager.sort_columns_by_list("print_test", ["age", "name", "not_a_column", "city"])
+    print("sorting columns to match provided list with non-column: ['age', 'city', 'name']")
+    manager.sort_columns_by_list("print_test", ['age', 'city', 'name'])
     manager.print_database("print_test")
 
-    print("reverting to original order:")
-    manager.sort_columns_by_list("print_test", ["name", "age", "city"])
+    print("sorting columns to match provided list with non-column: ['name', 'not_a_column', 'age', 'city']")
+    manager.sort_columns_by_list("print_test", ['name', 'not_a_column', 'age', 'city'])
     manager.print_database("print_test")
 
     print("sorting by age descending:")

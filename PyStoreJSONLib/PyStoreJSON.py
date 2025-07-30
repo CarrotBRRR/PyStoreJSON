@@ -129,6 +129,19 @@ class PyStoreJSONDB:
         """
         return [row for row in self._load() if row.get(key) == value]
 
+    def at_index(self, index: int) -> Dict:
+        """
+        Get the row at the specified index.
+
+        :param index: Index of the row to retrieve.
+        :return: Row at the specified index.
+        :raises IndexError: If the index is out of range.
+        """
+        data = self._load()
+        if index < 0 or index >= len(data):
+            raise IndexError("Index out of range.")
+        return data[index]
+
     def update_by(self, key: str, value, updates: Dict) -> int:
         """
         Update rows that match the given key-value condition with new values.
@@ -267,30 +280,25 @@ class PyStoreJSONDB:
 
     def sort_columns(self, row_index: int, reverse: bool = False) -> List[Dict]:
         """
-        Sort the columns of all rows based on the values in the specified row index.
+        Sort the columns of all rows based on the order of the specified row index.
 
         :param row_index: Index of the row to use as a reference for column sort order.
         :param reverse: Whether to sort columns in descending order.
         :return: List of rows with reordered keys.
+        :raises IndexError: If the row_index is out of range.
         """
         data = self._load()
-
-        if not (0 <= row_index < len(data)):
-            raise IndexError("Row index out of range.")
+        if row_index < 0 or row_index >= len(data):
+            raise IndexError("Index out of range.")
 
         reference_row = data[row_index]
+        sorted_keys = list(reference_row.keys())
+        if reverse:
+            sorted_keys.reverse()
 
-        # Sort keys by value, with None last, and coercion to string for safe comparison
-        def sort_key(k):
-            val = reference_row.get(k)
-            return (val is None, str(val))
-
-        sorted_keys = sorted(reference_row.keys(), key=sort_key, reverse=reverse)
-
-        # Reconstruct each row with keys in sorted order
         sorted_rows = []
         for row in data:
-            sorted_row = {key: row.get(key, None) for key in sorted_keys}
+            sorted_row = {key: row.get(key) for key in sorted_keys}
             sorted_rows.append(sorted_row)
 
         return sorted_rows

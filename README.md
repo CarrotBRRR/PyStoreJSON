@@ -34,13 +34,15 @@ Not designed for high-performance or production-grade applications.\
 Please use a more robust database solution, such as PostgreSQL or MongoDB for these applications.
 
 ## Installation
-```pip install git+https://github.com/CarrotBRRR/PyStoreJSON.git```
+```cmd
+pip install git+https://github.com/CarrotBRRR/PyStoreJSON.git
+```
 
 ## Usage
 ### Initialize Manager
 
 ```python
-from PyStoreJSONLib.PyStoreManager import PyStoreManager
+from PyStoreJSONLib import PyStoreManager
 
 manager = PyStoreManager("path/to/databases")
 ```

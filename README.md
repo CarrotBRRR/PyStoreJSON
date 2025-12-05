@@ -39,7 +39,7 @@ Please use a more robust database solution, such as PostgreSQL or MongoDB for th
 pip install git+https://github.com/CarrotBRRR/PyStoreJSON.git
 ```
 
-### To use the shell:
+### Shell Installation:
 1. Install via pip:
 ```bash
 pip install git+https://github.com/CarrotBRRR/PyStoreJSON.git

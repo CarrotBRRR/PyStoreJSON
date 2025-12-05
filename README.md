@@ -34,15 +34,49 @@ Not designed for high-performance or production-grade applications.\
 Please use a more robust database solution, such as PostgreSQL or MongoDB for these applications.
 
 ## Installation
-```cmd
+### to use the library in your own projects, install via pip:
+```bash
 pip install git+https://github.com/CarrotBRRR/PyStoreJSON.git
 ```
 
-## Usage
-### Initialize Manager
+### To use the shell:
+1. Install via pip:
+```bash
+pip install git+https://github.com/CarrotBRRR/PyStoreJSON.git
+```
+2. Download the PyStoreSHELL.py file from the GitHub repository:
+```bash
+wget https://raw.githubusercontent.com/CarrotBRRR/PyStoreJSON/main/PyStoreSHELL.py
+```
 
+## Usage
+### PyStoreSHELL usage
+A simple command-line interface (CLI) for interacting with PyStoreJSONDB databases.
+
+Run the shell script:
+```bash
+python PyStoreSHELL.py
+```
+in your terminal in the directory where PyStoreSHELL.py is located.\
+This will launch an interactive shell where you can execute commands to manage your JSON databases.
+
+#### Shell Commands
+| Command                                   | Description |
+|-------------------------------------------|-|
+| ```create <name>```                       | Create a new database with the specified name |
+| ```list```                                | List all databases |
+| ```delete <name>```                       | Delete the specified database |
+| ```print <name>```                        | Print the contents of the specified database |
+| ```insert <db> <json>```                  | Insert a new row or rows into the specified database |
+| ```find <db> <key> <value>```             | Find rows in the specified database where the key matches the value |
+| ```update <db> <key> <value> <json>```    | Update rows in the specified database where the key matches the value with the provided JSON data |
+| ```delete-by <db> <key> <value>```        | Delete rows in the specified database where the key matches the value |
+| ```sort <db> <key> [--reverse]```         | Sort rows in the specified database by the specified key, optionally in reverse order |
+| ```exit```                                | Exit PyStoreSHELL |
+
+### Initialize Manager
 ```python
-from PyStoreJSONLib import PyStoreManager
+from PyStoreJSONLib.PyStoreManager import PyStoreManager
 
 manager = PyStoreManager("path/to/databases")
 ```

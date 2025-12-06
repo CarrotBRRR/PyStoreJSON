@@ -19,6 +19,32 @@ def print_help():
         "  exit\n"
     )
 
+def parse_value_token(token: str):
+    """
+    Parse a CLI token into an appropriate Python value.
+    Examples:
+      "null"   -> None
+      "true"   -> True
+      "3.14"   -> 3.14
+      "42"     -> 42
+      "hello"  -> "hello"
+      "'hi'"   -> "hi"
+      '"hi"'   -> "hi"
+    """
+    # Try raw JSON parse first (handles null, true, false, numbers, quoted strings)
+    try:
+        return json.loads(token)
+    except Exception:
+        pass
+
+    # If token looks like an unquoted word (e.g. null was already tried),
+    # try adding quotes to force a string.
+    try:
+        return json.loads(f'"{token}"')
+    except Exception:
+        # Fallback: return the original string
+        return token
+
 def interactive_cli(directory):
     manager = PyStoreManager(directory)
     print("PyStore JSON Database Shell")
@@ -28,7 +54,6 @@ def interactive_cli(directory):
         try:
             raw = input(">>> ").strip()
         except (EOFError, KeyboardInterrupt):
-            print("\nExiting")
             break
 
         if not raw:
@@ -71,8 +96,12 @@ def interactive_cli(directory):
             print("Inserted")
             continue
 
+        # FIND using parsed token
         if cmd == "find" and len(args) == 4:
-            result = manager.get_database(args[1]).find_by(args[2], args[3])
+            db = manager.get_database(args[1])
+            raw_token = args[3]
+            value = parse_value_token(raw_token)
+            result = db.find_by(args[2], value)
             print(json.dumps(result, indent=4))
             continue
 
@@ -130,8 +159,6 @@ def interactive_cli(directory):
 
                 print("Invalid option, try again")
             continue
-
-
 
         if cmd == "delete-by" and len(args) == 4:
             count = manager.get_database(args[1]).delete_by(args[2], args[3])

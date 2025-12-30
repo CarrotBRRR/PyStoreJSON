@@ -14,6 +14,7 @@ def print_help():
         "  insert <db> <json>\n"
         "  find <db> <key> <value>\n"
         "  update <db> <key> <value> <json>\n"
+        "  rename-key <db> <old_keyname> <new_keyname>\n"
         "  delete-by <db> <key> <value>\n"
         "  sort <db> <key> [--reverse | -r]\n"
         "  exit\n"
@@ -71,7 +72,7 @@ def interactive_cli(directory):
 
         if cmd == "create" and len(args) == 2:
             manager.create_database(args[1])
-            print("Database created")
+            print("[i] Database created")
             continue
 
         if cmd == "list":
@@ -79,14 +80,19 @@ def interactive_cli(directory):
             continue
 
         if cmd == "delete" and len(args) == 2:
-            print("Deleted" if manager.delete_database(args[1]) else "Not found")
-            continue
+            print("[i] This is a irreversible and destructive operation!")
+            confirm = input(f"[?] Are you sure you want to delete the database `{args[1]}`? (Y/N): ").strip().lower()
+            if confirm != 'y':
+                print("[i] Delete cancelled")
+                continue
+            else:
+                print("[i] Deleted" if manager.delete_database(args[1]) else f"[!] Database {args[1]} not found!")
+                continue
 
         if cmd == "print" and len(args) == 2:
             manager.print_database(args[1])
             continue
 
-        # INSERT fixed implementation
         if cmd == "insert" and len(args) >= 3:
             db = manager.get_database(args[1])
             json_str = raw.split(" ", 2)[2]                 # take everything after the db name
@@ -95,20 +101,23 @@ def interactive_cli(directory):
             try:
                 data = json.loads(json_str)
             except json.JSONDecodeError as e:
-                print(f"Invalid JSON: {e}")
+                print(f"[!] Invalid JSON: {e}")
                 continue
 
             db.insert(data)
-            print("Inserted")
+            print("[i] Inserted")
             continue
 
         # FIND using parsed token
         if cmd == "find" and len(args) == 4:
             db = manager.get_database(args[1])
-            raw_token = args[3]
-            value = parse_value_token(raw_token)
+            value = parse_value_token(args[3])
             result = db.find_by(args[2], value)
-            print(json.dumps(result, indent=4))
+
+            print(f"[i] Found {len(result)} matching entries:")
+            for idx, row in enumerate(result):
+                print(f"  {row}")
+
             continue
 
         # UPDATE with interactive selection if multiple matches found
@@ -120,23 +129,23 @@ def interactive_cli(directory):
             try:
                 updates = json.loads(json_str)
             except json.JSONDecodeError as e:
-                print(f"Invalid JSON for updates: {e}")
+                print(f"[!] Invalid JSON for updates: {e}")
                 continue
 
             matches = db.find_by(key, value)
 
             if not matches:
-                print("No matching entries found")
+                print("[i] No matching entries found")
                 continue
 
             # Direct update when only one match exists
             if len(matches) == 1:
                 db.update_by(key, value, updates)
-                print("Updated 1 entry")
+                print("[i] Updated 1 entry")
                 continue
 
             # Multiple matches detected
-            print(f"{len(matches)} matching entries found:")
+            print(f"[i] {len(matches)} matching entries found:")
             for idx, row in enumerate(matches):
                 print(f"  [{idx}] {row}")
 
@@ -149,12 +158,12 @@ def interactive_cli(directory):
                 choice = input("Select option: ").strip().lower()
 
                 if choice == "cancel":
-                    print("Update cancelled")
+                    print("[i] Update cancelled")
                     break
 
                 if choice == "all":
                     count = db.update_by(key, value, updates)
-                    print(f"Updated {count} entries")
+                    print(f"[i] Updated {count} entries")
                     break
 
                 # Single index update
@@ -164,21 +173,34 @@ def interactive_cli(directory):
                     row_index = data.index(selected)
                     data[row_index].update(updates)
                     db._save(data)
-                    print(f"Updated entry at index {choice}")
+                    print(f"[i] Updated entry at index {choice}")
                     break
 
-                print("Invalid option, try again")
+                print("[!] Invalid selection, please try again")
+            continue
+        
+        if cmd == "rename-key" and len(args) == 4:
+            ok = manager.get_database(args[1]).rename_key(args[2], args[3])
+            print(f"Key {args[2]} renamed to {args[3]}" if ok else f"Key {args[2]} not found")
             continue
 
         if cmd == "delete-by" and len(args) == 4:
-            count = manager.get_database(args[1]).delete_by(args[2], args[3])
-            print(f"Deleted {count}")
-            continue
+            value = parse_value_token(args[3])
+            n_affected_rows = manager.get_database(args[1]).find_by(args[2], value).__len__()
+            print("[i] This is a irreversible and destructive operation!")
+            confirm = input(f"[?] Are you sure you want to delete {n_affected_rows} matching entries in database `{args[1]}`? (Y/N): ").strip().lower()
+            if confirm != 'y':
+                print("[i] Delete cancelled")
+                continue
+            else:
+                count = manager.get_database(args[1]).delete_by(args[2], value)
+                print(f"[i] Deleted {count} entries")
+                continue
 
         if cmd == "sort" and len(args) >= 3:
             reverse = ("--reverse" or "-r") in args
             manager.sort_database(args[1], args[2], reverse)
-            print("Sorted")
+            print("Sorted!")
             continue
 
         print("Invalid command or arguments")

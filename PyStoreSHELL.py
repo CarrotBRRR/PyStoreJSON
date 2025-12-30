@@ -15,7 +15,7 @@ def print_help():
         "  find <db> <key> <value>\n"
         "  update <db> <key> <value> <json>\n"
         "  delete-by <db> <key> <value>\n"
-        "  sort <db> <key> [--reverse]\n"
+        "  sort <db> <key> [--reverse | -r]\n"
         "  exit\n"
     )
 
@@ -91,7 +91,13 @@ def interactive_cli(directory):
             db = manager.get_database(args[1])
             json_str = raw.split(" ", 2)[2]                 # take everything after the db name
             json_str = json_str.replace("'", '"')           # optional convenience
-            data = json.loads(json_str)
+            
+            try:
+                data = json.loads(json_str)
+            except json.JSONDecodeError as e:
+                print(f"Invalid JSON: {e}")
+                continue
+
             db.insert(data)
             print("Inserted")
             continue
@@ -108,10 +114,14 @@ def interactive_cli(directory):
         # UPDATE with interactive selection if multiple matches found
         if cmd == "update" and len(args) >= 5:
             db = manager.get_database(args[1])
-            key, value = args[2], args[3]
+            key, value = args[2], parse_value_token(args[3])
 
             json_str = raw.split(" ", 4)[4].replace("'", '"')
-            updates = json.loads(json_str)
+            try:
+                updates = json.loads(json_str)
+            except json.JSONDecodeError as e:
+                print(f"Invalid JSON for updates: {e}")
+                continue
 
             matches = db.find_by(key, value)
 
@@ -166,7 +176,7 @@ def interactive_cli(directory):
             continue
 
         if cmd == "sort" and len(args) >= 3:
-            reverse = "--reverse" in args
+            reverse = ("--reverse" or "-r") in args
             manager.sort_database(args[1], args[2], reverse)
             print("Sorted")
             continue

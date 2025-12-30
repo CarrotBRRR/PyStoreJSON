@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import json
+import json, sys
 import shlex
 from PyStoreJSONLib import PyStoreManager
 
@@ -184,5 +184,9 @@ def interactive_cli(directory):
         print("Invalid command or arguments")
 
 if __name__ == "__main__":
-    directory = input("Database directory path: ").strip()
+    if len(sys.argv) >= 2: # directory passed as argument
+        directory = sys.argv[1]
+    else:
+        directory = input("Database directory path: ").strip()
+
     interactive_cli(directory)
